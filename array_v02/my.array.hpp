@@ -22,8 +22,10 @@ public:
 	//
 	pointer data(){ return (pointer )this->my_array::data(); }
 	const_pointer data()const{ return (const_pointer )this->my_array::data(); }
-	reference operator[]( size_type i ){ return ((pointer )(this->my_array::data()))[i]; }
-	const_reference operator[]( size_type i )const{ return ((const_pointer )(this->my_array::data()))[i]; }
+	pointer data(int i){ return this->data() + i; }
+	const_pointer data(int i)const{ return this->data() + i; }
+	reference operator[]( size_type i ){ return *(this->data(i)); }
+	const_reference operator[]( size_type i )const{ return *(this->my_array::data(i)); }
 	size_type size()const{ return this->my_array::size()/sizeof(T); }
 	void resize( size_type __size );
 };
