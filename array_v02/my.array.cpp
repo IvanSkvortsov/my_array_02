@@ -27,15 +27,18 @@ void my_array::allocate( size_type __size )
 	this->_M_data = (array_struct * )::operator new( __size + sizeof(size_type) );
 	this->_M_data->size = __size;
 }
-void my_array::resize( size_type __size )
+int my_array::resize( size_type __size )
 {
-	if( __size == 0 )
-		return;
-	else if( this->size() == __size )
-		return;
+	if( this->size() == __size )
+		return 0;
 	else if( this->_M_data )
 		this->free();
-	this->allocate( __size );
+	if( __size )
+	{
+		this->allocate( __size );
+		return 1;
+	}
+	return 0;// here (__size == 0)
 }
 my_array::my_array(): _M_data(){__login__( std::clog, this, "my_array", "my_array()" ); }
 my_array::my_array( my_array const & v ): _M_data( (array_struct * )( v.size() ? ::operator new( v.size() + sizeof(size_type) ) : (void *)0 ) )

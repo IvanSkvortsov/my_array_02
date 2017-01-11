@@ -40,7 +40,9 @@ template<typename T> inline void my_array_t<T>::copy( my_array_t<T> const & v )
 }
 template<typename T> void my_array_t<T>::resize( size_type __size )
 {
-	this->my_array::resize( __size * sizeof(T) );
+	int __st = this->my_array::resize( __size * sizeof(T) );
+	if( __st == 0 )
+		return;
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
@@ -51,7 +53,9 @@ template<typename T> my_array_t<T> & my_array_t<T>::operator=( my_array_t<T> con
 	__login__( std::clog, this, "my_array_t<T>", "operator=( my_array_t<T> const & )" );
 	if( this == &v )
 		return *this;
-	this->my_array::resize( v.my_array::size() );
+	int __st = this->my_array::resize( v.my_array::size() );
+	if( __st == 0 )
+		return *this;
 	this->copy( v );
 	return *this;
 }

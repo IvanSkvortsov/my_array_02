@@ -30,8 +30,8 @@ public:
 
 	void * data();
 	void const * data()const;
-	uint32_t size()const;
-	void resize( size_type __size );
+	size_type size()const;
+	int resize( size_type __size );// return value: 0 - if __size -eq this->size(), or if __size -eq 0; 1 - otherwise
 };
 
 #endif//__MY_ARRAY_H__
