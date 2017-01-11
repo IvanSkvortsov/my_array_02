@@ -1,0 +1,47 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Vim swap files.
+*.swp
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+p2pvc
+video
+audio
+
+# my files
+file.err
+get.work.time.h
+smart.time.h
+bitprint.h*
+smart.bits.h*
+assert.s.h
+arr.struct.*
+vector.*
+# my directories
+array_v00/
+array_v01/
