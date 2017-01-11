@@ -3,8 +3,6 @@
 #include<iostream>
 #include<iomanip>
 #include<cstdlib>// atoi
-#include"bitprint.hpp"
-#include"smart.bits.hpp"
 using namespace std;
 
 template<typename T>

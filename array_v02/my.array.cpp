@@ -1,5 +1,11 @@
 #include"my.array.h"
-#include"assert.s.h"
+
+#ifdef NDEBUG
+  #define __assert__( expression )
+#else
+  #include<cassert>
+  #define __assert__( expression ) assert( expression )
+#endif
 
 #define ARRAY_DATA( array_str ) ( (array_str) ? (array_str)->data : (void *)0 )
 #define ARRAY_SIZE( array_str ) ( (array_str) ? (array_str)->size : (size_type)0 )
@@ -16,13 +22,13 @@ typename my_array::size_type my_array::size()const
 
 void my_array::free()
 {
-	__assert_s__( this->_M_data != 0, "shouldn't be zero when deleting pointer" );
+	__assert__( this->_M_data != 0 );// shouldn't be zero when deleting pointer
 	::operator delete( this->_M_data );
 	this->_M_data = 0;
 }
 void my_array::allocate( size_type __size )
 {
-	__assert_s__( this->_M_data == 0, "should be zero when allocating pointer" );
+	__assert__( this->_M_data == 0 );// should be zero when allocating pointer
 	__assert__( __size > sizeof(size_type) );
 	this->_M_data = (array_struct * )::operator new( __size + sizeof(size_type) );
 	this->_M_data->size = __size;
@@ -58,7 +64,7 @@ my_array & my_array::operator=( my_array const & v )
 my_array::~my_array()
 {
 	__my_array_login__( std::clog, this, function_name() );
-	__assert_s__( ( this->data() == 0 ? this->_M_data == 0 : this->_M_data != 0 ),
-			"if 'data' == 0; then 'array_struct' == 0; otherwise 'array_struct' != 0" );
+	// if 'data' == 0; then 'array_struct' == 0; otherwise 'array_struct' != 0
+	__assert__( ( this->data() == 0 ? this->_M_data == 0 : this->_M_data != 0 ) );
 	if( this->_M_data ) this->free();
 }
