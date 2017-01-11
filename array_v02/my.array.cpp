@@ -40,16 +40,16 @@ int my_array::resize( size_type __size )
 	}
 	return 0;// here (__size == 0)
 }
-my_array::my_array(): _M_data(){__login__( std::clog, this, "my_array", "my_array()" ); }
+my_array::my_array(): _M_data(){__my_array_login__( std::clog, this, function_name() ); }
 my_array::my_array( my_array const & v ): _M_data( (array_struct * )( v.size() ? ::operator new( v.size() + sizeof(size_type) ) : (void *)0 ) )
 { 
-	__login__( std::clog, this, "my_array", "my_array( my_array const & )" );
+	__my_array_login__( std::clog, this, function_name() );
 	if( this->_M_data )
 		this->_M_data->size = v.size();
 }
 my_array & my_array::operator=( my_array const & v )
 {
-	__login__( std::clog, this, "my_array", "operator=( my_array const & )" );
+	__my_array_login__( std::clog, this, function_name() );
 	if( this == &v )
 		return *this;
 	const size_type v_size = v.size();
@@ -57,7 +57,7 @@ my_array & my_array::operator=( my_array const & v )
 }
 my_array::~my_array()
 {
-	__login__( std::clog, this, "my_array", "~my_array()" );
+	__my_array_login__( std::clog, this, function_name() );
 	__assert_s__( ( this->data() == 0 ? this->_M_data == 0 : this->_M_data != 0 ),
 			"if 'data' == 0; then 'array_struct' == 0; otherwise 'array_struct' != 0" );
 	if( this->_M_data ) this->free();

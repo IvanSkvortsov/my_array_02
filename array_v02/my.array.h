@@ -5,9 +5,11 @@
 #define __MY_ARRAY_LOGIN__
 #ifdef  __MY_ARRAY_LOGIN__
   #include<iostream>
-  #define __login__( stm, ptr, class_name, method_name ) stm << "Log: [" << ptr << "] " << class_name << "::" << method_name << std::endl
+  #define __my_array_login__( stm, ptr, method_name ) stm << "Log: [" << ptr << "] " << method_name << std::endl
+  #define function_name() __PRETTY_FUNCTION__
 #else
-  #define __login__( stm, ptr, class_name, method_name )
+  #define __my_array_login__( stm, ptr, method_name )
+  #define function_name()
 #endif
 
 #define NDEBUG

@@ -50,7 +50,7 @@ template<typename T> void my_array_t<T>::resize( size_type __size )
 }
 template<typename T> my_array_t<T> & my_array_t<T>::operator=( my_array_t<T> const & v )
 {
-	__login__( std::clog, this, "my_array_t<T>", "operator=( my_array_t<T> const & )" );
+	__my_array_login__( std::clog, this, function_name() );
 	if( this == &v )
 		return *this;
 	int __st = this->my_array::resize( v.my_array::size() );
@@ -59,19 +59,50 @@ template<typename T> my_array_t<T> & my_array_t<T>::operator=( my_array_t<T> con
 	this->copy( v );
 	return *this;
 }
-template<typename T> my_array_t<T>::my_array_t(): my_array(){ __login__( std::clog, this, "my_array_t<T>", "my_array_t()" ); }
+template<typename T> my_array_t<T>::my_array_t(): my_array(){ __my_array_login__( std::clog, this, function_name() ); }
 template<typename T> my_array_t<T>::my_array_t( my_array_t<T> const & v ): my_array( v )
 {
-	__login__( std::clog, this, "my_array_t<T>", "my_array_t( my_array_t<T> const & )" );
+	__my_array_login__( std::clog, this, function_name() );
 	this->copy( v );
 }
 template<typename T> my_array_t<T>::~my_array_t()
 {
-	__login__( std::clog, this, "my_array_t<T>", "~my_array_t()" );
+	__my_array_login__( std::clog, this, function_name() );
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
 		p->~T();
 }
+
+#include<cstring>// memcpy, memset
+// Specialization
+#define __MY_ARRAY_T_SPEC( _BUILT_IN_TYPE_ ) \
+template<> void my_array_t<_BUILT_IN_TYPE_>::copy( my_array_t<_BUILT_IN_TYPE_> const & v )\
+{\
+	__assert_s__( this->my_array::size() == v.my_array::size(), "sizes should be equal to each other when copying" );\
+	memcpy( this->data(), v.data(), v.my_array::size() );\
+}\
+template<> void my_array_t<_BUILT_IN_TYPE_>::resize( size_type __size )\
+{\
+	int __st = this->my_array::resize( __size * sizeof(_BUILT_IN_TYPE_) );\
+	if( __st == 0 )\
+		return;\
+	memset( this->data(), 0, this->my_array::size() );\
+}\
+template<> my_array_t<_BUILT_IN_TYPE_>::~my_array_t(){ __my_array_login__( std::clog, this, function_name() ); }
+
+__MY_ARRAY_T_SPEC( char );
+__MY_ARRAY_T_SPEC( short );
+__MY_ARRAY_T_SPEC( int );
+__MY_ARRAY_T_SPEC( long int );
+__MY_ARRAY_T_SPEC( long long int );
+__MY_ARRAY_T_SPEC( unsigned char );
+__MY_ARRAY_T_SPEC( unsigned short );
+__MY_ARRAY_T_SPEC( unsigned int );
+__MY_ARRAY_T_SPEC( unsigned long int );
+__MY_ARRAY_T_SPEC( unsigned long long int );
+__MY_ARRAY_T_SPEC( float );
+__MY_ARRAY_T_SPEC( double );
+__MY_ARRAY_T_SPEC( long double );
 
 #endif//__MY_ARRAY_HPP__
