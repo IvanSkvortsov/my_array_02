@@ -1,14 +1,18 @@
 #ifndef __MY_ARRAY_H__
 #define __MY_ARRAY_H__
 #include<cstdint>// uint32_t
+#include<cassert>// assert
 
 #define __MY_ARRAY_LOGIN__
 #ifdef  __MY_ARRAY_LOGIN__
   #include<iostream>
-  #define __my_array_login__( stm, ptr, method_name ) stm << "Log: [" << ptr << "] " << method_name << std::endl
+  #ifdef  __login__
+    #undef  __login__
+  #endif
+  #define __login__( stm, ptr, method_name ) stm << "Log: [" << ptr << "] " << method_name << std::endl
   #define function_name() __PRETTY_FUNCTION__
 #else
-  #define __my_array_login__( stm, ptr, method_name )
+  #define __login__( stm, ptr, method_name )
   #define function_name()
 #endif
 
