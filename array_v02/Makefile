@@ -6,5 +6,7 @@ my.array.o: my.array.h my.array.cpp
 my.array.exe: my.array.o my.array.hpp my.array.demo.h my.array.main.cpp
 	$(CXX) -o $@ my.array.main.cpp my.array.o
 
+my.array.test.exe: my.array.o my.array.hpp my.array.test.h my.array.test.main.cpp
+	$(CXX) -o $@ my.array.test.main.cpp my.array.o memory.map.o
 clean:
 	rm -f *.exe *.o

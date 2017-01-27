@@ -42,6 +42,18 @@ smart.bits.h*
 assert.s.h
 arr.struct.*
 vector.*
+memory.map.h
+*.test.*
+*.compare.*
+foo.h
+my.allocator.hpp
+pointer.*
+print.met.h
+ref.ptr.*
+substr.*
+template.*
+u.force.cast.h
 # my directories
 array_v00/
 array_v01/
+blacksmith/
