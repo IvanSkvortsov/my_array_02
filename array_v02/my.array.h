@@ -37,6 +37,8 @@ public:
 
 	void * data();
 	void const * data()const;
+	void * data(int i);
+	void const * data(int i)const;
 	size_type size()const;
 	int resize( size_type __size );// return value: 0 - if __size -eq this->size(), or if __size -eq 0; 1 - otherwise
 };

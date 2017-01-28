@@ -43,10 +43,15 @@ assert.s.h
 arr.struct.*
 vector.*
 memory.map.h
-*.test.*
+*.test.h
+*.test.main.*
+*.test.inp
+*.test.map
+run.test.sh
+*.test.*.log
 *.compare.*
 foo.h
-my.allocator.hpp
+*my.allocator.hpp
 pointer.*
 print.met.h
 ref.ptr.*

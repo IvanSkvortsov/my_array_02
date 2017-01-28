@@ -101,18 +101,19 @@ public:
 	~my_array_t();
 	// bonus =)
 	template<typename U> my_array_t( my_array_t<U> const & v );// see copy-ctor comment
+	template<typename U> my_array_t( U v_start, U v_end );
 	template<typename U> my_array_t( size_type __size, U const & x );
 	template<typename U> my_array_t( std::initializer_list<U> init );
 	// operator=
 	template<typename U> my_array_t<T> & operator=( my_array_t<U> const & v );
 	my_array_t<T> & operator=( my_array_t<T> && v );
 	// assign: affects size of current array
-	template<typename U> void assign( const size_type v_size, U const * const v_data, const int is_data_scalar = 0 );
+	template<typename U> void assign( const size_type v_size, U const * const v_data, const int is_data_scalar );
 	// syntactic sugar to %assign( const size_type , U const * const , const int ):
-	template<typename U> void assign( U const * v_data, U const * v_end ){ this->assign( v_end - v_data, v_data, 0 ); }
-	template<typename U> void assign( const size_type v_size, U const & x_data ){ this->assign( v_size, &x_data, 1 ); }
-	template<typename U> void assign( my_array_t<U> const & v ){ this->assign( v.size(), v.data(), 0 ); }
-	void resize( size_type __size ){ this->assign<T>( __size, (const_pointer)0, 0 ); }
+	template<typename U> void assign( U const * v_data, U const * v_end ){ __log_info__( this ); this->assign( v_end - v_data, v_data, 0 ); }
+	template<typename U> void assign( const size_type v_size, U const & x_data ){ __log_info__( this ); this->assign( v_size, &x_data, 1 ); }
+	template<typename U> void assign( my_array_t<U> const & v ){ __log_info__( this ); this->assign( v.size(), v.data(), 0 ); }
+	void resize( size_type __size ){ __log_info__( this ); this->assign( __size, (const_pointer)0, 0 ); }
 	// range_assign: doesn't affect size of current array
 	template<typename U> void range_assign_v( U const * __x, const size_type __pos = 0u, const size_type __len = -1);
 	template<typename U> void range_assign_s( U const & __x, const size_type __pos = 0u, const size_type __len = -1);
@@ -164,6 +165,14 @@ template<typename T> my_array_t<T>::my_array_t( size_type __size ): my_array( __
 	__log_info__( this );
 	this->construct_full();
 }
+template<typename T>
+template<typename U> my_array_t<T>::my_array_t( U v_start, U v_end ):
+	my_array( (v_end > v_start) && v_start ? (v_end - v_start) * sizeof(value_type) : (size_type)0 )
+{
+	__log_info__( this );
+	if( v_start )
+		this->construct_full_v( v_start );
+}
 template<typename T> my_array_t<T>::my_array_t( std::initializer_list<T> init ): my_array( init.size() * sizeof(value_type) )
 {
 	__log_info__( this );
@@ -182,29 +191,29 @@ template<typename T> my_array_t<T>::~my_array_t()
 	this->destroy_full();
 }
 
-#define __MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len )\
+#define __MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len, liter )\
 do{\
 if( __len == 0 )\
 	return;\
 const size_type t_size = this->size();\
 if( __pos == 0u && (__len >= t_size || (long int)__len < 0) )\
-	return this->range_assign_full( __x );\
+	return this->range_assign_full_##liter( __x );\
 else if( __pos == 0u )\
-	return this->range_assign_head( __len, __x );\
+	return this->range_assign_head_##liter( __len, __x );\
 else if( (long int)__len < 0 || (__len + __pos) > t_size )\
-	return this->range_assign_tail( __pos, __x );\
-return this->range_assign_mid( __pos, __len, __x );\
+	return this->range_assign_tail_##liter( __pos, __x );\
+return this->range_assign_mid_##liter( __pos, __len, __x );\
 } while(0);
 
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_s( U const & __x, const size_type __pos, const size_type __len )
 {
-	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len );
+	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len, s );
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_v( U const * __x, const size_type __pos, const size_type __len )
 {
-	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len );
+	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len, v );
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_full_s( U const & x_data )
@@ -220,17 +229,17 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_full_v( U 
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_s( const size_type v_size, U const & x_data )
 {
-	assert( v_size <= this->size() );
+	const size_type t_size = this->size(), r_size = ( v_size > t_size ? t_size : v_size );
 	pointer t_data = this->data();
-	for(size_type i = 0; i < v_size; ++i, ++t_data )
+	for(size_type i = 0; i < r_size; ++i, ++t_data )
 		cast_assign( *t_data, x_data );
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_v( const size_type v_size, U const * v_data )
 {
-	assert( v_size <= this->size() );
+	const size_type t_size = this->size(), r_size = ( v_size > t_size ? t_size : v_size );
 	pointer t_data = this->data();
-	for(size_type i = 0; i < v_size; ++i, ++t_data, ++v_data )
+	for(size_type i = 0; i < r_size; ++i, ++t_data, ++v_data )
 		cast_assign( *t_data, *v_data );
 }
 
@@ -253,7 +262,11 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_tail_v( co
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_s( const size_type v_begin, const size_type v_size, U const & x_data )
 {
-	assert( v_begin + v_size <= this->size() && (int)v_begin > 0 && (int)v_size >= 0 );
+	if( v_begin + v_size > this->size() || (long int)v_begin < 0 || (long int)v_size < 0 )
+	{
+		__error_msg__( this, "incompatible value(s) of v_begin and/or v_size" );
+		exit( 1 );
+	}
 	pointer t_data = this->data() + v_begin;
 	for(size_type i = 0; i < v_size; ++i, ++t_data )
 		cast_assign( *t_data, x_data );
@@ -261,7 +274,11 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_s( con
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_v( const size_type v_begin, const size_type v_size, U const * v_data )
 {
-	assert( v_begin + v_size <= this->size() && (int)v_begin > 0 && (int)v_size >= 0 );
+	if( v_begin + v_size > this->size() || (long int)v_begin < 0 || (long int)v_size < 0 )
+	{
+		__error_msg__( this, "incompatible value(s) of v_begin and/or v_size" );
+		exit( 1 );
+	}
 	pointer t_data = this->data() + v_begin;
 	for(size_type i = 0; i < v_size; ++i, ++t_data, ++v_data )
 		cast_assign( *t_data, *v_data );
@@ -270,8 +287,9 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_v( con
 template<typename T>
 template<typename U> void my_array_t<T>::assign( const size_type v_size, U const * const v_data, const int is_data_scalar )
 {
-	assert( (is_data_scalar)^(v_data == 0) );
+	__log_info__( this );
 	//assert( ( (v_data == 0) && !is_data_scalar ) || v_data );
+	assert( (is_data_scalar ? (v_data != 0) : 1 ) );
 	const size_type t_size = this->size();
 	if( t_size == v_size )
 	{
@@ -302,7 +320,7 @@ template<typename U> void my_array_t<T>::assign( const size_type v_size, U const
 		}
 		else if( !is_data_scalar )// && v_data == 0
 		{
-			this->construct_tail_s( t_size );
+			this->construct_tail( t_size );
 		}
 		else if( v_data )// && is_data_scalar
 		{

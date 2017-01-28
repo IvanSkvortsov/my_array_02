@@ -4,12 +4,14 @@
 #include"global.error.msg.h"
 #include<cassert>// assert
 
-#define ARRAY_DATA( array_str ) ( (array_str) ? (array_str)->data : (void *)0 )
+#define ARRAY_DATA( array_str, idx ) ( (array_str) ? (array_str)->data + (idx) : (void *)0 )
 #define ARRAY_SIZE( array_str ) ( (array_str) ? (array_str)->size : (size_type)0 )
 
 
-void * my_array::data(){ return ARRAY_DATA( this->_M_data ); }
-void const * my_array::data()const{ return ARRAY_DATA( this->_M_data ); }
+void * my_array::data(){ return ARRAY_DATA( this->_M_data, 0); }
+void const * my_array::data()const{ return ARRAY_DATA( this->_M_data, 0); }
+void * my_array::data(int i){ return ARRAY_DATA( this->_M_data, i ); }
+void const * my_array::data(int i)const{ return ARRAY_DATA( this->_M_data, i ); }
 typename my_array::size_type my_array::size()const
 {
 	assert( (this->_M_data != 0 ? this->_M_data->size != 0 : 1 ) );
@@ -49,8 +51,6 @@ my_array::my_array( my_array const & v ): _M_data( (array_struct * )( v.size() ?
 	__log_info__( this );
 	if( this->_M_data )
 		this->_M_data->size = v.size();
-	std::cout << "v.size: " << v.my_array::size() << std::endl;
-	std::cout << "t.size: " << this->my_array::size() << std::endl;
 }
 my_array::my_array( my_array && v ): _M_data( v._M_data )
 { 
@@ -62,8 +62,6 @@ my_array::my_array( size_type __size ): _M_data( (array_struct * )( __size ? ::o
 	__log_info__( this );
 	if( this->_M_data )
 		this->_M_data->size = __size;
-	std::cout << "v.size: " << __size << std::endl;
-	std::cout << "t.size: " << this->my_array::size() << std::endl;
 }
 my_array & my_array::operator=( my_array const & v )
 {
