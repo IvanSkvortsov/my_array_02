@@ -21,26 +21,26 @@ template<typename T> int test_assign( const typename my_array::size_type size )
 	}
 	my_array_t<T> a( size, 5 );
 	a.assign( size, 7 );// assign( size_type , U const & ) [with U = int]
-	print_vec( a, "vec:a" );
+	print_vec( a, "vec:a", 1 );
 
 	double x = 6;
 	a.assign( size+1, x );// assign( size_type , U const & ) [with U = double]
-	print_vec( a, "vec:a" );
+	print_vec( a, "vec:a", 1 );
 
-	a.assign( size, &x, 1 );// assign( size_type , U const * const , const int )
-	print_vec( a, "vec:a" );
+	a.assign( size, x );// assign( size_type , U const & )
+	print_vec( a, "vec:a", 1 );
 
 	my_array_t<int> b( size+1, 1);
 	a.assign( b );// assign( my_array_t<U> const & )
-	print_vec( a, "vec:a" );
+	print_vec( a, "vec:a", 1 );
 
 	a.assign( b.data(), b.data() + b.size() - 1 );// assign( U const * , U const * )
-	print_vec( a, "vec:a" );
+	print_vec( a, "vec:a", true );
 
-	a.assign( b.size(), b.data(), 0 );// assign( size_type , U const * const , const int )
+	a.assign( b.data(), b.data() + b.size());// assign( U const *, U const * )
 	print_vec( a, "vec:a" );
 
 	a.resize( b.size() - 1 );
-	print_vec( a, "vec:a" );
+	print_vec( a, "vec:a", 1 );
 	return 0;
 }

@@ -11,7 +11,7 @@ int main()
 
 template<typename T> inline void _print_vec_( T const & vec, const char * name, std::ostream & out = std::cout )
 {
-	print_vec( vec, name, out );
+	print_vec( vec, name, 1, out );
 	out << "------" << std::endl;
 }
 

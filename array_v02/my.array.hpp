@@ -67,7 +67,7 @@ public:
 	typedef T & reference;
 	typedef T const & const_reference;
 	typedef typename my_array::size_type size_type;
-private:
+protected:
 	void destroy_full();
 	void destroy_head( const size_type v_size );// from 0'th to (v_size-1)'th
 	void destroy_tail( const size_type v_begin );// from v_begin'th to (this->size()-1)'th
@@ -80,23 +80,22 @@ private:
 	void construct_head( const size_type v_size );// 0 -> (v_size-1)
 	template<typename U> void construct_head_s( U const & x, const size_type v_size );// 0 -> (v_size-1)
 	template<typename U> void construct_head_v( U const * v, const size_type v_size );
-	//void construct_head_s( const size_type v_size, T const & x );// 0 -> (v_size-1)
-	//void construct_head_v( const size_type v_size, T const * v );
 	void move_construct_head_v( T * v,  const size_type v_size );
 
 	void construct_tail( const size_type v_begin);// (v_begin) -> (this->size()-1)
 	template<typename U> void construct_tail_s( U const & x, const size_type v_begin);// (v_begin) -> (this->size()-1)
 	template<typename U> void construct_tail_v( U const * v, const size_type v_begin);
-	//void construct_tail_v( const size_type v_begin, T const * v);
-	//void construct_tail_s( const size_type v_begin, T const & x);// (v_begin) -> (this->size()-1)
 	void move_construct_tail_v( T * v,  const size_type v_begin);
+
+	// assign: affects size and/or capacity of current array
+	template<typename U> void assign( const size_type v_size, U const * const v_data, const int is_data_scalar );
 
 	typedef struct my_array::array_struct array_struct;
 public:
 	my_array_t();
-	my_array_t( my_array_t<T> const & v );// unless declared it is implicitly deleted because of declared move-ctor
+	my_array_t( my_array_t<T> const & v );// unless declared it is implicitly deleted because of move-ctor
 	my_array_t( my_array_t<T> && v );
-	my_array_t( std::initializer_list<T> init );// enables list-initialization, {T(1.05), T(4.1), ...}; (uses move-ctor of initializer's elements)
+	my_array_t( std::initializer_list<T> init );// enables list-initialization, {T(1.05), T(4.1), ...}
 	my_array_t( size_type __size );
 	~my_array_t();
 	// bonus =)
@@ -107,14 +106,13 @@ public:
 	// operator=
 	template<typename U> my_array_t<T> & operator=( my_array_t<U> const & v );
 	my_array_t<T> & operator=( my_array_t<T> && v );
-	// assign: affects size of current array
-	template<typename U> void assign( const size_type v_size, U const * const v_data, const int is_data_scalar );
 	// syntactic sugar to %assign( const size_type , U const * const , const int ):
 	template<typename U> void assign( U const * v_data, U const * v_end ){ __log_info__( this ); this->assign( v_end - v_data, v_data, 0 ); }
 	template<typename U> void assign( const size_type v_size, U const & x_data ){ __log_info__( this ); this->assign( v_size, &x_data, 1 ); }
 	template<typename U> void assign( my_array_t<U> const & v ){ __log_info__( this ); this->assign( v.size(), v.data(), 0 ); }
 	void resize( size_type __size ){ __log_info__( this ); this->assign( __size, (const_pointer)0, 0 ); }
-	// range_assign: doesn't affect size of current array
+	void reserve( size_type __size ){ __log_info__( this ); this->my_array::reserve( __size * sizeof(value_type) ); }
+	// range_assign: doesn't affect size and capacity of current array
 	template<typename U> void range_assign_v( U const * __x, const size_type __pos = 0u, const size_type __len = -1);
 	template<typename U> void range_assign_s( U const & __x, const size_type __pos = 0u, const size_type __len = -1);
 	template<typename U> void range_assign_full_v( U const * v_data );
@@ -133,6 +131,8 @@ public:
 	reference operator[]( size_type i ){ return *(this->data(i)); }
 	const_reference operator[]( size_type i )const{ return *(this->data(i)); }
 	size_type size()const{ return this->my_array::size()/sizeof(value_type); }
+	size_type capacity()const{ return this->my_array::capacity()/sizeof(value_type); }
+	void shrink_to_fit(){ this->my_array::shrink_to_fit(); }
 };
 
 template<typename T> my_array_t<T>::my_array_t(): my_array()
@@ -237,6 +237,7 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_s( co
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_v( const size_type v_size, U const * v_data )
 {
+	assert( v_data );
 	const size_type t_size = this->size(), r_size = ( v_size > t_size ? t_size : v_size );
 	pointer t_data = this->data();
 	for(size_type i = 0; i < r_size; ++i, ++t_data, ++v_data )
@@ -254,6 +255,7 @@ template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_tail_s( co
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_tail_v( const size_type v_begin, U const * v_data )
 {
+	assert( v_data );
 	const size_type t_size = this->size();
 	pointer t_data = this->data() + v_begin;
 	for(size_type i = v_begin; i < t_size; ++i, ++t_data, ++v_data )
@@ -288,69 +290,33 @@ template<typename T>
 template<typename U> void my_array_t<T>::assign( const size_type v_size, U const * const v_data, const int is_data_scalar )
 {
 	__log_info__( this );
-	//assert( ( (v_data == 0) && !is_data_scalar ) || v_data );
-	assert( (is_data_scalar ? (v_data != 0) : 1 ) );
+	this->destroy_tail( v_size );// compare: this->size() < v_size; if true; then destroy; else return;
+	if( v_size == 0 )
+		return;
+	this->reserve( v_size );//  compare: this->capacity() < v_size; if true; then reallocate; else return;
+	if( v_data == 0 && is_data_scalar )
+	{// reserve
+		return;
+		//__error_msg__( this, "pointer 'v_data' (which is [" << v_data <<\
+				"] ) shouldn't be zero, when data is scalar ('is_data_scalar' is " << is_data_scalar << " )" );
+		//exit(1);
+	}
 	const size_type t_size = this->size();
-	if( t_size == v_size )
-	{
-		if( v_data )
-		{
-			if( is_data_scalar )
-				this->range_assign_head_s( v_size, *v_data );
-			else
-				this->range_assign_head_v( v_size,  v_data );
-		}
-	}
-	else if( v_size == 0 )
-	{
-		this->destroy_full();
-		this->my_array::free();
-	}
-	else if( t_size < v_size )
-	{
-		array_struct * __new_array = this->my_array::allocate( v_size * sizeof(value_type) );
-		memcpy( __new_array->data, this->my_array::data(), t_size * sizeof(value_type) );
-		if( this->my_array::_M_data )
-			this->my_array::free();
-		this->my_array::_M_data = __new_array;
-		if( v_data && !is_data_scalar )
-		{
-			this->range_assign_head_v( t_size, v_data );
-			this->construct_tail_v( v_data + t_size, t_size );
-		}
-		else if( !is_data_scalar )// && v_data == 0
-		{
-			this->construct_tail( t_size );
-		}
-		else if( v_data )// && is_data_scalar
-		{
-			this->range_assign_head_s( t_size, *v_data );
-			this->construct_tail_s( *v_data, t_size );
-		}
-		else
-		{
-			__error_msg__( this, "pointer 'v_data' shouldn't be 0 when 'is_data_scalar' is set true" );
-			exit(1);
-		}
-	}
-	else
-	{
-		const int __size_BYTES = v_size * sizeof(value_type);
-		array_struct * __new_array = this->my_array::allocate( __size_BYTES );
-		memcpy( __new_array->data, this->my_array::data(), __size_BYTES );
-		this->destroy_tail( v_size );
-		if( this->my_array::_M_data )
-			this->my_array::free();
-		this->my_array::_M_data = __new_array;
-		if( v_data )
-		{
-			if( is_data_scalar )
-				this->range_assign_head_s( v_size, *v_data );
-			else
-				this->range_assign_head_v( v_size,  v_data );
-		}
+	this->my_array::set_size( v_size * sizeof(value_type) );
+	if( v_data == 0 )
+	{// resize
+		this->construct_tail( t_size );
+	} else if( is_data_scalar )
+	{// assign (scalar)
+		this->range_assign_head_s( t_size, *v_data );
+		this->construct_tail_s( *v_data, t_size );
+	} else
+	{// assign (vector)
+		this->range_assign_head_v( t_size, v_data );
+		this->construct_tail_v( v_data + t_size, t_size );
 	}
 }
+
 template<typename T>
 template<typename U> my_array_t<T> & my_array_t<T>::operator=( my_array_t<U> const & v )
 {
@@ -367,11 +333,8 @@ template<typename T> my_array_t<T> & my_array_t<T>::operator=( my_array_t<T> && 
 	return *this;
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_full()
-{// destroy
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < t_size; ++i, ++p )
-		p->~T();
+{// destroy_full
+	this->destroy_tail( 0 );
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_head( const size_type v_size )
 {// destroy_head
@@ -384,57 +347,50 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_head( const siz
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_tail( const size_type v_begin )
 {// destroy_tail
 	const size_type t_size = this->size();
+	if( t_size <= v_begin )
+		return;
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
 		p->~T();
+	this->my_array::_M_data->size = v_begin;
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_full()
-{// construct
+{// construct_full
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
-		//placement_construct<T>( p );// new (p) T();
 		placement_construct( p );// new (p) T();
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_full_v( U const * x )
-{// construct
+{// construct_full
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
-		//new (p) T( *x++ );
-		//placement_copy_construct<T,U>( p, *x++ );// new (p) T(*x++)
 		placement_copy_construct( p, *x++ );// new (p) T(*x++)
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_full_v( T * x )
-{// construct
+{// construct_full
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
-		//new (p) T( std::move(*x++) );
-		//placement_move_construct<T>( p, *x++ );// new (p) T(std::move(*x++));
 		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_full_s( U const & x )
-{// construct
+{// construct_full
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < t_size; ++i, ++p )
-		//new (p) T( x );
-		//placement_copy_construct<T,U>( p, x );// new (p) T(x)
 		placement_copy_construct( p, x );// new (p) T(x)
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_head_v( U const * x, const size_type v_size )
-//template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_head_v( const size_type v_size, T const * x )
 {// construct_head
 	assert( v_size >= 0 && v_size <= this->size() );
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < v_size; ++i, ++p )
-		//new (p) T( *x++ );
-		//placement_copy_construct<T,U>( p, *x++ );// new (p) T(*x++)
 		placement_copy_construct( p, *x++ );// new (p) T(*x++)
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_head_v( T * x, const size_type v_size )
@@ -443,8 +399,6 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_head_v( 
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < v_size; ++i, ++p )
-		//new (p) T( std::move(*x++) );
-		//placement_move_construct<T>( p, *x++ );// new (p) T(std::move(*x++));
 		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_head( const size_type v_size )
@@ -453,31 +407,24 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_head( const s
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < v_size; ++i, ++p )
-		//placement_construct<T>( p );// new (p) T();
 		placement_construct( p );// new (p) T();
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_head_s( U const & x, const size_type v_size )
-//template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_head_s( const size_type v_size, T const & x )
 {// construct_head
 	assert( v_size >= 0 && v_size <= this->size() );
 	const size_type t_size = this->size();
 	pointer p = this->data();
 	for(int i = 0; i < v_size; ++i, ++p )
-		//new (p) T(x);
-		//placement_copy_construct<T,U>( p, x );// new (p) T(x)
 		placement_copy_construct( p, x );// new (p) T(x)
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_tail_v( U const * x, const size_type v_begin )
-//template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_tail_v( const size_type v_begin, T const * x )
 {// construct_tail
 	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
-		//new (p) T(*x++);
-		//placement_copy_construct<T,U>( p, *x++ );// new (p) T(*x++)
 		placement_copy_construct( p, *x++ );// new (p) T(*x++)
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_tail_v( T * x, const size_type v_begin )
@@ -486,8 +433,6 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_tail_v( 
 	const size_type t_size = this->size();
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
-		//new (p) T( std::move(*x++) );
-		//placement_move_construct<T>( p, *x++ );// new (p) T(std::move(*x++));
 		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_tail( const size_type v_begin )
@@ -496,18 +441,15 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_tail( const s
 	const size_type t_size = this->size();
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
-		//placement_construct<T>( p );// new (p) T();
 		placement_construct( p );// new (p) T();
 }
 template<typename T>
 template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_tail_s( U const & x, const size_type v_begin )
-//template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_tail_s( const size_type v_begin, T const & x )
 {// construct_tail
 	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
-		//placement_copy_construct<T,U>( p, x );// new (p) T(x)
 		placement_copy_construct( p, x );// new (p) T(x)
 }
 
@@ -519,40 +461,40 @@ template<> inline void my_array_t<TYPE>::destroy_head( const size_type v_size ){
 template<> inline void my_array_t<TYPE>::destroy_tail( const size_type v_begin ){}\
 template<> inline void my_array_t<TYPE>::construct_full()\
 {\
-	if( this->my_array::data() )\
+	if( this->my_array::_M_data )\
 		memset( this->data(), 0, this->my_array::size() );\
 }\
 template<> inline void my_array_t<TYPE>::move_construct_full_v( TYPE * v_data )\
 {\
-	if( v_data && this->my_array::data() )\
+	if( v_data && this->my_array::_M_data )\
 		memcpy( this->data(), v_data, this->my_array::size() );\
 }\
 template<> inline void my_array_t<TYPE>::construct_head( const size_type v_size )\
 {\
 	if( (long int)v_size < 0 || v_size >= this->size() )\
 		this->construct_full();\
-	else if( this->my_array::data() )\
+	else if( this->my_array::_M_data )\
 		memset( this->data(), 0, v_size * sizeof(value_type) );\
 }\
 template<> inline void my_array_t<TYPE>::move_construct_head_v( TYPE * v_data, const size_type v_size )\
 {\
 	if( (long int)v_size < 0 || v_size >= this->size() )\
 		this->construct_full_v( v_data );\
-	else if( v_data && this->my_array::data() )\
+	else if( v_data && this->my_array::_M_data )\
 		memcpy( this->data(), v_data, v_size * sizeof(value_type) );\
 }\
 template<> inline void my_array_t<TYPE>::construct_tail( const size_type v_begin )\
 {\
 	if( v_begin == 0u )\
 		this->construct_full();\
-	else if( this->my_array::data() && v_begin <= this->size() )\
+	else if( this->my_array::_M_data && v_begin <= this->size() )\
 		memset( this->data() + v_begin, 0, this->my_array::size() - v_begin * sizeof(value_type) );\
 }\
 template<> inline void my_array_t<TYPE>::move_construct_tail_v( TYPE * v_data, const size_type v_begin )\
 {\
 	if( v_begin == 0u )\
 		this->construct_full_v( v_data );\
-	else if( v_data && this->my_array::data() && v_begin <= this->size() )\
+	else if( v_data && this->my_array::_M_data && v_begin <= this->size() )\
 		memcpy( this->data() + v_begin, v_data, this->my_array::size() - v_begin * sizeof(value_type) );\
 }
 
