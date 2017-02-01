@@ -19,13 +19,14 @@ public:
 	typedef uint32_t size_type;
 	struct array_struct
 	{
-		size_type size;
+		size_type capacity, size;
 		unsigned char data[];
 	};
 	static array_struct * allocate( size_type __size );
 protected:
 	array_struct * _M_data;
 	void free();
+	void set_size( size_type __size );
 public:
 	my_array();
 	my_array( my_array const & );
@@ -40,7 +41,11 @@ public:
 	void * data(int i);
 	void const * data(int i)const;
 	size_type size()const;
-	int resize( size_type __size );// return value: 0 - if __size -eq this->size(), or if __size -eq 0; 1 - otherwise
+	size_type capacity()const;
+	void resize( size_type __size );
+	void reserve( size_type );
+	void reallocate( size_type );
+	void shrink_to_fit();
 };
 
 #endif//__MY_ARRAY_H__

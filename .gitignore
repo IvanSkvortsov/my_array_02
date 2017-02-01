@@ -58,6 +58,7 @@ ref.ptr.*
 substr.*
 template.*
 u.force.cast.h
+*.log
 # my directories
 array_v00/
 array_v01/
