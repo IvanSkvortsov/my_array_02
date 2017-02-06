@@ -91,6 +91,7 @@ protected:
 	template<typename U> void assign( const size_type v_size, U const * const v_data, const int is_data_scalar );
 
 	typedef struct my_array::array_struct array_struct;
+	void set_size( size_type __size ){ this->my_array::set_size( __size * sizeof(value_type) ); }
 public:
 	my_array_t();
 	my_array_t( my_array_t<T> const & v );// unless declared it is implicitly deleted because of move-ctor
@@ -132,7 +133,6 @@ public:
 	const_reference operator[]( size_type i )const{ return *(this->data(i)); }
 	size_type size()const{ return this->my_array::size()/sizeof(value_type); }
 	size_type capacity()const{ return this->my_array::capacity()/sizeof(value_type); }
-	void shrink_to_fit(){ this->my_array::shrink_to_fit(); }
 };
 
 template<typename T> my_array_t<T>::my_array_t(): my_array()
@@ -297,12 +297,11 @@ template<typename U> void my_array_t<T>::assign( const size_type v_size, U const
 	if( v_data == 0 && is_data_scalar )
 	{// reserve
 		return;
-		//__error_msg__( this, "pointer 'v_data' (which is [" << v_data <<\
-				"] ) shouldn't be zero, when data is scalar ('is_data_scalar' is " << is_data_scalar << " )" );
+		//__error_msg__( this, "pointer 'v_data' shouldn't be zero, when data is scalar" );
 		//exit(1);
 	}
 	const size_type t_size = this->size();
-	this->my_array::set_size( v_size * sizeof(value_type) );
+	this->set_size( v_size );
 	if( v_data == 0 )
 	{// resize
 		this->construct_tail( t_size );
@@ -352,7 +351,7 @@ template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_tail( const siz
 	pointer p = this->data() + v_begin;
 	for(int i = v_begin; i < t_size; ++i, ++p )
 		p->~T();
-	this->my_array::_M_data->size = v_begin;
+	this->set_size( v_begin );
 }
 template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_full()
 {// construct_full
