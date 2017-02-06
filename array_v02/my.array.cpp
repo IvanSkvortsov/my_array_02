@@ -45,6 +45,7 @@ typename my_array::array_struct * my_array::allocate( size_type __size )
 }
 void my_array::reallocate( size_type __size )
 {
+	// Warning! It may cause a memory leak
 	__log_info__( this );
 	const size_type t_size = this->size();
 	array_struct * __new_array = this->allocate( __size );
@@ -72,13 +73,6 @@ void my_array::reserve( size_type __size )
 	while( t_capacity < __size )
 		t_capacity <<= 1;
 	this->reallocate( t_capacity );
-}
-void my_array::resize( size_type __size )
-{
-	assert( (long int)__size >= 0 );
-	__log_info__( this );
-	this->reserve( __size );
-	this->set_size( __size );
 }
 my_array::my_array(): _M_data(){__log_info__( this ); }
 my_array::my_array( my_array const & v ): _M_data( (array_struct * )( v.size() ? ::operator new( v.size() + sizeof(array_struct) ) : (void *)0 ) )

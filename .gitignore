@@ -59,6 +59,8 @@ substr.*
 template.*
 u.force.cast.h
 *.log
+macros.*
+func.template.*
 # my directories
 array_v00/
 array_v01/

@@ -5,9 +5,7 @@
 #include"global.log.info.h"
 #include"global.error.msg.h"
 #include<cassert>// assert
-
-#include<utility>// move
-#include<cstring>// memcpy, memset
+#include"my.range.allocator.hpp"
 #include<cstdlib>// exit
 
 #define __IS_SUBROUTINE_INLINE__ 0
@@ -18,46 +16,7 @@
   #define __INLINE_SUBR__
 #endif
 
-template<typename LHS_T, typename RHS_T> inline void cast_assign( LHS_T & lhs, RHS_T const & rhs ){ lhs = rhs; }
-template<typename LHS_T, typename RHS_T> inline void placement_copy_construct( LHS_T * lhs, RHS_T const & rhs ){ new (lhs) LHS_T(rhs); }
-template<typename T> inline void placement_construct( T * lhs ){ new (lhs) T(); }
-template<typename T> inline void placement_move_construct( T * lhs, T && rhs ){ new (lhs) T(std::move(rhs)); }
-
-#define __PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, RHS_T )\
-template<> inline void placement_copy_construct( LHS_T * lhs, RHS_T const & rhs ){ cast_assign( *lhs, rhs ); }\
-
-#define __PLACEMENT_CONSTRUCT_SPEC2_1( LHS_T )\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,                  float );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,                 double );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,            long double );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,                   char );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,                  short );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,                    int );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,               long int );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T,          long long int );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, unsigned          char );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, unsigned         short );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, unsigned           int );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, unsigned      long int );\
-__PLACEMENT_COPY_CONSTRUCT_SPEC2( LHS_T, unsigned long long int );\
-template<> inline void placement_construct( LHS_T * lhs ){ *lhs = 0; }\
-template<> inline void placement_move_construct( LHS_T * lhs, LHS_T && rhs ){ cast_assign( *lhs, rhs ); }
-
-__PLACEMENT_CONSTRUCT_SPEC2_1( float );
-__PLACEMENT_CONSTRUCT_SPEC2_1( double );
-__PLACEMENT_CONSTRUCT_SPEC2_1( long double );
-__PLACEMENT_CONSTRUCT_SPEC2_1( char );
-__PLACEMENT_CONSTRUCT_SPEC2_1( short );
-__PLACEMENT_CONSTRUCT_SPEC2_1( int );
-__PLACEMENT_CONSTRUCT_SPEC2_1( long int );
-__PLACEMENT_CONSTRUCT_SPEC2_1( long long int );
-__PLACEMENT_CONSTRUCT_SPEC2_1( unsigned char );
-__PLACEMENT_CONSTRUCT_SPEC2_1( unsigned short );
-__PLACEMENT_CONSTRUCT_SPEC2_1( unsigned int );
-__PLACEMENT_CONSTRUCT_SPEC2_1( unsigned long int );
-__PLACEMENT_CONSTRUCT_SPEC2_1( unsigned long long int );
-
-template<typename T>
+template<typename T, typename _RAlloc = my_range_allocator<T> >
 class my_array_t: public my_array
 {
 public:
@@ -67,6 +26,7 @@ public:
 	typedef T & reference;
 	typedef T const & const_reference;
 	typedef typename my_array::size_type size_type;
+	typedef std::ptrdiff_t difference_type;
 protected:
 	void destroy_full();
 	void destroy_head( const size_type v_size );// from 0'th to (v_size-1)'th
@@ -94,23 +54,26 @@ protected:
 	void set_size( size_type __size ){ this->my_array::set_size( __size * sizeof(value_type) ); }
 public:
 	my_array_t();
-	my_array_t( my_array_t<T> const & v );// unless declared it is implicitly deleted because of move-ctor
-	my_array_t( my_array_t<T> && v );
+	my_array_t( my_array_t<T,_RAlloc> const & v );// unless declared it is implicitly deleted because of move-ctor
+	my_array_t( my_array_t<T,_RAlloc> && v );
 	my_array_t( std::initializer_list<T> init );// enables list-initialization, {T(1.05), T(4.1), ...}
 	my_array_t( size_type __size );
 	~my_array_t();
 	// bonus =)
-	template<typename U> my_array_t( my_array_t<U> const & v );// see copy-ctor comment
+	template<class U, class range_allocator_type = my_range_allocator<U> >
+		my_array_t( my_array_t<U,range_allocator_type> const & v );// see copy-ctor comment
 	template<typename U> my_array_t( U v_start, U v_end );
 	template<typename U> my_array_t( size_type __size, U const & x );
 	template<typename U> my_array_t( std::initializer_list<U> init );
 	// operator=
-	template<typename U> my_array_t<T> & operator=( my_array_t<U> const & v );
-	my_array_t<T> & operator=( my_array_t<T> && v );
+	template<class U, class range_allocator_type = my_range_allocator<U> >
+		my_array_t<T,_RAlloc> & operator=( my_array_t<U, range_allocator_type> const & v );
+	my_array_t<T,_RAlloc> & operator=( my_array_t<T,_RAlloc> && v );
 	// syntactic sugar to %assign( const size_type , U const * const , const int ):
 	template<typename U> void assign( U const * v_data, U const * v_end ){ __log_info__( this ); this->assign( v_end - v_data, v_data, 0 ); }
 	template<typename U> void assign( const size_type v_size, U const & x_data ){ __log_info__( this ); this->assign( v_size, &x_data, 1 ); }
-	template<typename U> void assign( my_array_t<U> const & v ){ __log_info__( this ); this->assign( v.size(), v.data(), 0 ); }
+	template<class U, class range_allocator_type = my_range_alloctor<U> >
+		void assign( my_array_t<U, range_allocator_type> const & v ){ __log_info__( this ); this->assign( v.size(), v.data(), 0 ); }
 	void resize( size_type __size ){ __log_info__( this ); this->assign( __size, (const_pointer)0, 0 ); }
 	void reserve( size_type __size ){ __log_info__( this ); this->my_array::reserve( __size * sizeof(value_type) ); }
 	// range_assign: doesn't affect size and capacity of current array
@@ -135,57 +98,57 @@ public:
 	size_type capacity()const{ return this->my_array::capacity()/sizeof(value_type); }
 };
 
-template<typename T> my_array_t<T>::my_array_t(): my_array()
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::my_array_t(): my_array()
 {
 	__log_info__( this );
 }
-template<typename T>
-template<typename U> my_array_t<T>::my_array_t( my_array_t<U> const & v ): my_array( v.size() * sizeof(value_type) )
-{
-	__log_info__( this );
-	this->construct_full_v( v.data() );
-}
-template<typename T> my_array_t<T>::my_array_t( my_array_t<T> const & v ): my_array( v.my_array::size() )
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::my_array_t( my_array_t<T,_RAlloc> const & v ): my_array( v.my_array::size() )
 {
 	__log_info__( this );
 	this->construct_full_v( v.data() );
 }
-template<typename T> my_array_t<T>::my_array_t( my_array_t<T> && v ): my_array( std::move( v ) )
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::my_array_t( my_array_t<T,_RAlloc> && v ): my_array( std::move( v ) )
 {
 	__log_info__( this );
 }
-template<typename T>
-template<typename U> my_array_t<T>::my_array_t( size_type __size, U const & x ): my_array( __size * sizeof(value_type) )
-{
-	__log_info__( this );
-	this->construct_full_s( x );
-}
-template<typename T> my_array_t<T>::my_array_t( size_type __size ): my_array( __size * sizeof(value_type) )
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::my_array_t( size_type __size ): my_array( __size * sizeof(value_type) )
 {
 	__log_info__( this );
 	this->construct_full();
 }
-template<typename T>
-template<typename U> my_array_t<T>::my_array_t( U v_start, U v_end ):
+template<class T, class _RAlloc> template<class U, class range_allocator_type>
+my_array_t<T,_RAlloc>::my_array_t( my_array_t<U,range_allocator_type> const & v ): my_array( v.size() * sizeof(value_type) )
+{
+	__log_info__( this );
+	this->construct_full_v( v.data() );
+}
+template<class T, class _RAlloc>
+template<typename U> my_array_t<T,_RAlloc>::my_array_t( size_type __size, U const & x ): my_array( __size * sizeof(value_type) )
+{
+	__log_info__( this );
+	this->construct_full_s( x );
+}
+template<class T, class _RAlloc>
+template<typename U> my_array_t<T,_RAlloc>::my_array_t( U v_start, U v_end ):
 	my_array( (v_end > v_start) && v_start ? (v_end - v_start) * sizeof(value_type) : (size_type)0 )
 {
 	__log_info__( this );
 	if( v_start )
 		this->construct_full_v( v_start );
 }
-template<typename T> my_array_t<T>::my_array_t( std::initializer_list<T> init ): my_array( init.size() * sizeof(value_type) )
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::my_array_t( std::initializer_list<T> init ): my_array( init.size() * sizeof(value_type) )
 {
 	__log_info__( this );
 	this->construct_full_v( init.begin() );
 }
-template<typename T>
-template<typename U> my_array_t<T>::my_array_t( std::initializer_list<U> init ): my_array( init.size() * sizeof(value_type) )
+template<class T, class _RAlloc>
+template<typename U> my_array_t<T,_RAlloc>::my_array_t( std::initializer_list<U> init ): my_array( init.size() * sizeof(value_type) )
 {
 	__log_info__( this );
 	this->construct_full_v( init.begin() );
 }
 
-template<typename T> my_array_t<T>::~my_array_t()
+template<class T, class _RAlloc> my_array_t<T,_RAlloc>::~my_array_t()
 {
 	__log_info__( this );
 	this->destroy_full();
@@ -205,89 +168,81 @@ else if( (long int)__len < 0 || (__len + __pos) > t_size )\
 return this->range_assign_mid_##liter( __pos, __len, __x );\
 } while(0);
 
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_s( U const & __x, const size_type __pos, const size_type __len )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_s( U const & __x, const size_type __pos, const size_type __len )
 {
 	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len, s );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_v( U const * __x, const size_type __pos, const size_type __len )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_v( U const * __x, const size_type __pos, const size_type __len )
 {
 	__MY_ARRAY_T_RANGE_ASSIGN1__( __x, __pos, __len, v );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_full_s( U const & x_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_full_s( U const & x_data )
 {
 	this->range_assign_tail_s( 0, x_data );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_full_v( U const * v_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_full_v( U const * v_data )
 {
 	this->range_assign_tail_v( 0, v_data );
 }
 
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_s( const size_type v_size, U const & x_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_head_s( const size_type v_size, U const & x_data )
 {
-	const size_type t_size = this->size(), r_size = ( v_size > t_size ? t_size : v_size );
-	pointer t_data = this->data();
-	for(size_type i = 0; i < r_size; ++i, ++t_data )
-		cast_assign( *t_data, x_data );
+	const size_type t_size = this->size();
+	_RAlloc::assign_s( this->data(), x_data, ( v_size > t_size ? t_size : v_size ) );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_head_v( const size_type v_size, U const * v_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_head_v( const size_type v_size, U const * v_data )
 {
-	assert( v_data );
-	const size_type t_size = this->size(), r_size = ( v_size > t_size ? t_size : v_size );
-	pointer t_data = this->data();
-	for(size_type i = 0; i < r_size; ++i, ++t_data, ++v_data )
-		cast_assign( *t_data, *v_data );
+	if( !v_data ) return;
+	const size_type t_size = this->size();
+	_RAlloc::assign_v( this->data(), v_data, ( v_size > t_size ? t_size : v_size ) );
 }
 
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_tail_s( const size_type v_begin, U const & x_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_tail_s( const size_type v_begin, U const & x_data )
 {
 	const size_type t_size = this->size();
-	pointer t_data = this->data() + v_begin;
-	for(size_type i = v_begin; i < t_size; ++i, ++t_data )
-		cast_assign( *t_data, x_data );
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::assign_s( this->data() + v_begin, x_data, t_size - v_begin );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_tail_v( const size_type v_begin, U const * v_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_tail_v( const size_type v_begin, U const * v_data )
 {
-	assert( v_data );
+	if( !v_data ) return;
 	const size_type t_size = this->size();
-	pointer t_data = this->data() + v_begin;
-	for(size_type i = v_begin; i < t_size; ++i, ++t_data, ++v_data )
-		cast_assign( *t_data, *v_data );
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::assign_v( this->data() + v_begin, v_data, t_size - v_begin );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_s( const size_type v_begin, const size_type v_size, U const & x_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_mid_s( const size_type v_begin, const size_type v_size, U const & x_data )
 {
 	if( v_begin + v_size > this->size() || (long int)v_begin < 0 || (long int)v_size < 0 )
 	{
 		__error_msg__( this, "incompatible value(s) of v_begin and/or v_size" );
 		exit( 1 );
 	}
-	pointer t_data = this->data() + v_begin;
-	for(size_type i = 0; i < v_size; ++i, ++t_data )
-		cast_assign( *t_data, x_data );
+	_RAlloc::assign_s( this->data() + v_begin, x_data, v_size );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::range_assign_mid_v( const size_type v_begin, const size_type v_size, U const * v_data )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::range_assign_mid_v( const size_type v_begin, const size_type v_size, U const * v_data )
 {
 	if( v_begin + v_size > this->size() || (long int)v_begin < 0 || (long int)v_size < 0 )
 	{
 		__error_msg__( this, "incompatible value(s) of v_begin and/or v_size" );
 		exit( 1 );
 	}
-	pointer t_data = this->data() + v_begin;
-	for(size_type i = 0; i < v_size; ++i, ++t_data, ++v_data )
-		cast_assign( *t_data, *v_data );
+	_RAlloc::assign_v( this->data() + v_begin, v_data, v_size );
 }
 
-template<typename T>
-template<typename U> void my_array_t<T>::assign( const size_type v_size, U const * const v_data, const int is_data_scalar )
+template<class T, class _RAlloc>
+template<typename U> void my_array_t<T,_RAlloc>::assign( const size_type v_size, U const * const v_data, const int is_data_scalar )
 {
 	__log_info__( this );
 	this->destroy_tail( v_size );// compare: this->size() < v_size; if true; then destroy; else return;
@@ -316,8 +271,8 @@ template<typename U> void my_array_t<T>::assign( const size_type v_size, U const
 	}
 }
 
-template<typename T>
-template<typename U> my_array_t<T> & my_array_t<T>::operator=( my_array_t<U> const & v )
+template<class T, class _RAlloc> template<typename U, typename range_allocator_type>
+my_array_t<T,_RAlloc> & my_array_t<T,_RAlloc>::operator=( my_array_t<U, range_allocator_type> const & v )
 {
 	__log_info__( this );
 	if( this == &v )
@@ -325,134 +280,102 @@ template<typename U> my_array_t<T> & my_array_t<T>::operator=( my_array_t<U> con
 	this->assign( v.size(), v.data(), 0 );
 	return *this;
 }
-template<typename T> my_array_t<T> & my_array_t<T>::operator=( my_array_t<T> && v )
+template<class T, class _RAlloc> my_array_t<T,_RAlloc> & my_array_t<T,_RAlloc>::operator=( my_array_t<T,_RAlloc> && v )
 {
 	__log_info__( this );
 	this->my_array::operator=( std::move( v ) );
 	return *this;
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_full()
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::destroy_full()
 {// destroy_full
 	this->destroy_tail( 0 );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_head( const size_type v_size )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::destroy_head( const size_type v_size )
 {// destroy_head
-	assert( v_size <= this->size() );
 	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < v_size; ++i, ++p )
-		p->~T();
+	if( v_size > t_size )
+		return;
+	_RAlloc::destroy( this->data(), v_size );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::destroy_tail( const size_type v_begin )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::destroy_tail( const size_type v_begin )
 {// destroy_tail
 	const size_type t_size = this->size();
 	if( t_size <= v_begin )
 		return;
-	pointer p = this->data() + v_begin;
-	for(int i = v_begin; i < t_size; ++i, ++p )
-		p->~T();
+	_RAlloc::destroy( this->data() + v_begin, t_size - v_begin );
 	this->set_size( v_begin );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_full()
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_full()
 {// construct_full
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < t_size; ++i, ++p )
-		placement_construct( p );// new (p) T();
+	_RAlloc::construct( this->data(), this->size() );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_full_v( U const * x )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_full_v( U const * x )
 {// construct_full
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < t_size; ++i, ++p )
-		placement_copy_construct( p, *x++ );// new (p) T(*x++)
+	_RAlloc::construct_v( this->data(), x, this->size() );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_full_v( T * x )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::move_construct_full_v( T * x )
 {// construct_full
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < t_size; ++i, ++p )
-		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
+	_RAlloc::move_construct_v( this->data(), x, this->size() );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_full_s( U const & x )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_full_s( U const & x )
 {// construct_full
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < t_size; ++i, ++p )
-		placement_copy_construct( p, x );// new (p) T(x)
+	_RAlloc::construct_s( this->data(), x, this->size() );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_head_v( U const * x, const size_type v_size )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_head_v( U const * x, const size_type v_size )
 {// construct_head
-	assert( v_size >= 0 && v_size <= this->size() );
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < v_size; ++i, ++p )
-		placement_copy_construct( p, *x++ );// new (p) T(*x++)
+	assert( (difference_type)v_size >= 0 && v_size <= this->size() );
+	_RAlloc::construct_v( this->data(), x, v_size );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_head_v( T * x, const size_type v_size )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::move_construct_head_v( T * x, const size_type v_size )
 {// move_construct_head
-	assert( v_size >= 0 && v_size <= this->size() );
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < v_size; ++i, ++p )
-		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
+	assert( (difference_type)v_size >= 0 && v_size <= this->size() );
+	_RAlloc::move_construct_v( this->data(), x, v_size );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_head( const size_type v_size )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_head( const size_type v_size )
 {// construct_head
-	assert( v_size >= 0 && v_size <= this->size() );
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < v_size; ++i, ++p )
-		placement_construct( p );// new (p) T();
+	assert( (difference_type)v_size >= 0 && v_size <= this->size() );
+	_RAlloc::construct( this->data(), v_size );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_head_s( U const & x, const size_type v_size )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_head_s( U const & x, const size_type v_size )
 {// construct_head
-	assert( v_size >= 0 && v_size <= this->size() );
-	const size_type t_size = this->size();
-	pointer p = this->data();
-	for(int i = 0; i < v_size; ++i, ++p )
-		placement_copy_construct( p, x );// new (p) T(x)
+	assert( (difference_type)v_size >= 0 && v_size <= this->size() );
+	_RAlloc::construct_s( this->data(), x, v_size );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_tail_v( U const * x, const size_type v_begin )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_tail_v( U const * x, const size_type v_begin )
 {// construct_tail
-	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
-	pointer p = this->data() + v_begin;
-	for(int i = v_begin; i < t_size; ++i, ++p )
-		placement_copy_construct( p, *x++ );// new (p) T(*x++)
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::construct_v( this->data() + v_begin, x, t_size - v_begin );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::move_construct_tail_v( T * x, const size_type v_begin )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::move_construct_tail_v( T * x, const size_type v_begin )
 {// move_construct_tail
-	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
-	pointer p = this->data() + v_begin;
-	for(int i = v_begin; i < t_size; ++i, ++p )
-		placement_move_construct( p, *x++ );// new (p) T(std::move(*x++));
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::move_construct_v( this->data() + v_begin, x, t_size - v_begin );
 }
-template<typename T> __INLINE_SUBR__ void my_array_t<T>::construct_tail( const size_type v_begin )
+template<class T, class _RAlloc> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_tail( const size_type v_begin )
 {// construct_tail
-	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
-	pointer p = this->data() + v_begin;
-	for(int i = v_begin; i < t_size; ++i, ++p )
-		placement_construct( p );// new (p) T();
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::construct( this->data() + v_begin, t_size - v_begin );
 }
-template<typename T>
-template<typename U> __INLINE_SUBR__ void my_array_t<T>::construct_tail_s( U const & x, const size_type v_begin )
+template<class T, class _RAlloc>
+template<typename U> __INLINE_SUBR__ void my_array_t<T,_RAlloc>::construct_tail_s( U const & x, const size_type v_begin )
 {// construct_tail
-	assert( v_begin >= 0 );
 	const size_type t_size = this->size();
-	pointer p = this->data() + v_begin;
-	for(int i = v_begin; i < t_size; ++i, ++p )
-		placement_copy_construct( p, x );// new (p) T(x)
+	if( v_begin >= t_size )
+		return;
+	_RAlloc::construct_s( this->data() + v_begin, x, t_size - v_begin );
 }
 
-#include<cstring>// memcpy, memset
 // Specialization
 #define __MY_ARRAY_T_SPEC1( TYPE ) \
 template<> inline void my_array_t<TYPE>::destroy_full(){}\
