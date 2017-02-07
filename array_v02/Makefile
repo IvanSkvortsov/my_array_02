@@ -22,5 +22,8 @@ my.vector.test.assign.exe: my.vector.o $(file_templates) my.vector.test.assign.h
 my.vector.test.range.assign.exe: my.vector.o $(file_templates) my.vector.test.range.assign.h my.vector.test.range.assign.main.cpp
 	$(CXX) -o $@ my.vector.test.range.assign.main.cpp my.vector.o
 
+my.array.exe: my.array.h my.array.hpp my.range.allocator.hpp my.array.demo.h my.array.main.cpp
+	$(CXX) -o $@ my.array.main.cpp
+
 clean:
 	rm -f *.exe *.o
