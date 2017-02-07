@@ -1,12 +1,12 @@
-#ifndef __MY_ARRAY_H__
-#define __MY_ARRAY_H__
+#ifndef __MY_VECTOR_H__
+#define __MY_VECTOR_H__
 #include<cstdint>// uint32_t
 
-#define __MY_ARRAY_LOG_INFO__
-#define __MY_ARRAY_ERROR_MSG__
-//#define __MY_ARRAY_NDEBUG__
+#define __MY_VECTOR_LOG_INFO__
+#define __MY_VECTOR_ERROR_MSG__
+//#define __MY_VECTOR_NDEBUG__
 
-class my_array
+class my_vector
 {
 public:
 	typedef uint32_t size_type;
@@ -22,13 +22,13 @@ protected:
 	void set_size( size_type __size );
 	void reallocate( size_type );// It incapsulated due to a possible memory leak
 public:
-	my_array();
-	my_array( my_array const & );
-	my_array( my_array && );
-	my_array( size_type __size );
-	my_array & operator=( my_array const & );
-	my_array & operator=( my_array && );
-	~my_array();
+	my_vector();
+	my_vector( my_vector const & );
+	my_vector( my_vector && );
+	my_vector( size_type __size );
+	my_vector & operator=( my_vector const & );
+	my_vector & operator=( my_vector && );
+	~my_vector();
 
 	void * data();
 	void const * data()const;
@@ -40,4 +40,4 @@ public:
 	void shrink_to_fit();
 };
 
-#endif//__MY_ARRAY_H__
+#endif//__MY_VECTOR_H__

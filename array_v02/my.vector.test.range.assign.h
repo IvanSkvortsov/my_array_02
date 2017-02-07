@@ -1,9 +1,9 @@
 #include<iostream>
-#include"my.array.hpp"
+#include"my.vector.hpp"
 #include"print.met.h"
 #include"foo.h"
 
-template<typename T> int test_range_assign( const typename my_array::size_type size = 3 );
+template<typename T> int test_range_assign( const typename my_vector::size_type size = 3 );
 int main()
 {
 	return test_range_assign<Foo<long double> >( 4 );
@@ -15,10 +15,10 @@ template<typename T> inline void _print_vec_( T const & vec, const char * name, 
 	out << "------" << std::endl;
 }
 
-template<typename T> void test_range_assign_s( my_array_t<T> & a );
-template<typename T> void test_range_assign_v( my_array_t<T> & a );
+template<typename T> void test_range_assign_s( my_vector_t<T> & a );
+template<typename T> void test_range_assign_v( my_vector_t<T> & a );
 
-template<typename T> int test_range_assign( const typename my_array::size_type size = 3 )
+template<typename T> int test_range_assign( const typename my_vector::size_type size = 3 )
 {
 	using std::cerr;
 	using std::cout;
@@ -28,17 +28,17 @@ template<typename T> int test_range_assign( const typename my_array::size_type s
 		cerr << "Error: " << __PRETTY_FUNCTION__ << ", negative size (which is " << (long int)size << " )" << endl;
 		return 1;
 	}
-	my_array_t<T> a( size, 1 );
+	my_vector_t<T> a( size, 1 );
 	_print_vec_( a, "vec:a" );
 
 	test_range_assign_s( a );
 	test_range_assign_v( a );
 }
 
-template<typename T> inline void test_range_assign_s( my_array_t<T> & a )
+template<typename T> inline void test_range_assign_s( my_vector_t<T> & a )
 {
 	__log_info__( test_range_assign_s<T> );
-	typedef typename my_array::size_type size_type;
+	typedef typename my_vector::size_type size_type;
 	const size_type size = a.size();
 
 	a.range_assign_full_s( 3 );
@@ -76,10 +76,10 @@ template<typename T> inline void test_range_assign_s( my_array_t<T> & a )
 	std::cout << std::endl;
 }
 
-template<typename T> inline void test_range_assign_v( my_array_t<T> & a )
+template<typename T> inline void test_range_assign_v( my_vector_t<T> & a )
 {
 	__log_info__( test_range_assign_v<T> );
-	typedef typename my_array::size_type size_type;
+	typedef typename my_vector::size_type size_type;
 	const size_type size = a.size();
 
 	T vec[size] = {1, 3, 7};

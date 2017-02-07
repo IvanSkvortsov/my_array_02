@@ -1,15 +1,15 @@
-#ifndef __MY_ARRAY_CONFIG_H__
-#define __MY_ARRAY_CONFIG_H__
+#ifndef __MY_VECTOR_CONFIG_H__
+#define __MY_VECTOR_CONFIG_H__
 
-#if !defined( __MY_ARRAY_H__ )
-#error This file should follow 'my.array.h' file
+#if !defined( __MY_VECTOR_H__ )
+#error This file should follow 'my.vector.h' file
 #endif
 
 #if defined( __GLOBAL_LOG_INFO_H__ ) || defined( __GLOBAL_ERROR_MSG_H__ ) || defined( assert )
 #error This file should precede 'global.log.info.h', 'global.error.msg.h', and 'assert.h' files
 #endif
 
-#ifdef  __MY_ARRAY_LOG_INFO__
+#ifdef  __MY_VECTOR_LOG_INFO__
   #ifndef __GLOBAL_LOG_INFO__
   #define __GLOBAL_LOG_INFO__
   #endif
@@ -17,7 +17,7 @@
   #undef  __GLOBAL_LOG_INFO__
 #endif
 
-#ifdef  __MY_ARRAY_ERROR_MSG__
+#ifdef  __MY_VECTOR_ERROR_MSG__
   #ifndef __GLOBAL_ERROR_MSG__
   #define __GLOBAL_ERROR_MSG__
   #endif
@@ -25,11 +25,11 @@
   #undef  __GLOBAL_ERROR_MSG__
 #endif
 
-#if defined( __MY_ARRAY_LOG_INFO__ ) || defined( __MY_ARRAY_ERROR_MSG__ )
+#if defined( __MY_VECTOR_LOG_INFO__ ) || defined( __MY_VECTOR_ERROR_MSG__ )
   #include<iostream>
 #endif
 
-#ifdef  __MY_ARRAY_NDEBUG__
+#ifdef  __MY_VECTOR_NDEBUG__
   #ifndef NDEBUG
   #define NDEBUG
   #endif
@@ -39,4 +39,4 @@
   #endif
 #endif
 
-#endif//__MY_ARRAY_CONFIG_H__
+#endif//__MY_VECTOR_CONFIG_H__

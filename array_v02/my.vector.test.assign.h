@@ -1,15 +1,15 @@
 #include<iostream>
-#include"my.array.hpp"
+#include"my.vector.hpp"
 #include"print.met.h"
 #include"foo.h"
 
-template<typename T> int test_assign( const typename my_array::size_type size = 3 );
+template<typename T> int test_assign( const typename my_vector::size_type size = 3 );
 int main()
 {
 	return test_assign<Foo<float> >();
 }
 
-template<typename T> int test_assign( const typename my_array::size_type size )
+template<typename T> int test_assign( const typename my_vector::size_type size )
 {
 	using std::cerr;
 	using std::cout;
@@ -19,7 +19,7 @@ template<typename T> int test_assign( const typename my_array::size_type size )
 		cerr << "Error: " << __PRETTY_FUNCTION__ << ", negative size (which is " << (long int)size << " )" << endl;
 		return 1;
 	}
-	my_array_t<T> a( size, 5 );
+	my_vector_t<T> a( size, 5 );
 	a.assign( size, 7 );// assign( size_type , U const & ) [with U = int]
 	print_vec( a, "vec:a", 1 );
 
@@ -30,8 +30,8 @@ template<typename T> int test_assign( const typename my_array::size_type size )
 	a.assign( size, x );// assign( size_type , U const & )
 	print_vec( a, "vec:a", 1 );
 
-	my_array_t<int> b( size+1, 1);
-	a.assign( b );// assign( my_array_t<U> const & )
+	my_vector_t<int> b( size+1, 1);
+	a.assign( b );// assign( my_vector_t<U> const & )
 	print_vec( a, "vec:a", 1 );
 
 	a.assign( b.data(), b.data() + b.size() - 1 );// assign( U const * , U const * )

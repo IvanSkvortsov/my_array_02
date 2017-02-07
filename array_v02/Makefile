@@ -1,26 +1,26 @@
 CXX=g++ -std=c++11
-file_templates=my.array.hpp my.range.allocator.hpp
+file_templates=my.vector.hpp my.range.allocator.hpp
 
-my.array.o: my.array.h my.array.cpp
-	$(CXX) -c -o $@ my.array.cpp
+my.vector.o: my.vector.h my.vector.cpp
+	$(CXX) -c -o $@ my.vector.cpp
 
-my.array.exe: my.array.o $(file_templates) my.array.demo.h my.array.main.cpp
-	$(CXX) -o $@ my.array.main.cpp my.array.o
+my.vector.exe: my.vector.o $(file_templates) my.vector.demo.h my.vector.main.cpp
+	$(CXX) -o $@ my.vector.main.cpp my.vector.o
 
-my.array.test.exe: my.array.o $(file_templates) my.array.test.h my.array.test.main.cpp
-	$(CXX) -o $@ my.array.test.main.cpp my.array.o memory.map.o
+my.vector.test.exe: my.vector.o $(file_templates) my.vector.test.h my.vector.test.main.cpp
+	$(CXX) -o $@ my.vector.test.main.cpp my.vector.o memory.map.o
 
-my.array.test.construct.exe: my.array.o $(file_templates) my.array.test.construct.h my.array.test.construct.main.cpp
-	$(CXX) -o $@ my.array.test.construct.main.cpp my.array.o
+my.vector.test.construct.exe: my.vector.o $(file_templates) my.vector.test.construct.h my.vector.test.construct.main.cpp
+	$(CXX) -o $@ my.vector.test.construct.main.cpp my.vector.o
 
-my.array.test.ctor.exe: my.array.o $(file_templates) my.array.test.ctor.h my.array.test.ctor.main.cpp
-	$(CXX) -o $@ my.array.test.ctor.main.cpp my.array.o
+my.vector.test.ctor.exe: my.vector.o $(file_templates) my.vector.test.ctor.h my.vector.test.ctor.main.cpp
+	$(CXX) -o $@ my.vector.test.ctor.main.cpp my.vector.o
 
-my.array.test.assign.exe: my.array.o $(file_templates) my.array.test.assign.h my.array.test.assign.main.cpp
-	$(CXX) -o $@ my.array.test.assign.main.cpp my.array.o
+my.vector.test.assign.exe: my.vector.o $(file_templates) my.vector.test.assign.h my.vector.test.assign.main.cpp
+	$(CXX) -o $@ my.vector.test.assign.main.cpp my.vector.o
 
-my.array.test.range.assign.exe: my.array.o $(file_templates) my.array.test.range.assign.h my.array.test.range.assign.main.cpp
-	$(CXX) -o $@ my.array.test.range.assign.main.cpp my.array.o
+my.vector.test.range.assign.exe: my.vector.o $(file_templates) my.vector.test.range.assign.h my.vector.test.range.assign.main.cpp
+	$(CXX) -o $@ my.vector.test.range.assign.main.cpp my.vector.o
 
 clean:
 	rm -f *.exe *.o
